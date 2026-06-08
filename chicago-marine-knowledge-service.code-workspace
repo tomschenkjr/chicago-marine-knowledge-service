@@ -1,0 +1,41 @@
+{
+	"folders": [
+		{
+			"path": "../noaa-weather-mcp"
+		},
+		{
+			"path": "../noaa-marine-lake-michigan-mcp"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../chicago-marine-knowledge-mcp"
+		},
+		{
+			"path": "../mcp-aws-infra"
+		}
+	],
+	"settings": {
+		"workbench.colorCustomizations": {
+			"activityBar.activeBackground": "#5f97aa",
+			"activityBar.background": "#5f97aa",
+			"activityBar.foreground": "#15202b",
+			"activityBar.inactiveForeground": "#15202b99",
+			"activityBarBadge.background": "#7d426e",
+			"activityBarBadge.foreground": "#e7e7e7",
+			"commandCenter.border": "#e7e7e799",
+			"sash.hoverBorder": "#5f97aa",
+			"statusBar.background": "#4a7b8c",
+			"statusBar.foreground": "#e7e7e7",
+			"statusBarItem.hoverBackground": "#5f97aa",
+			"statusBarItem.remoteBackground": "#4a7b8c",
+			"statusBarItem.remoteForeground": "#e7e7e7",
+			"titleBar.activeBackground": "#4a7b8c",
+			"titleBar.activeForeground": "#e7e7e7",
+			"titleBar.inactiveBackground": "#4a7b8c99",
+			"titleBar.inactiveForeground": "#e7e7e799"
+		},
+		"peacock.color": "#4A7B8C"
+	}
+}
