@@ -37,6 +37,16 @@ POST /v1/marine/context
 POST /v1/marine/sailing-conditions
 ```
 
+See [docs/API.md](docs/API.md) for full request/response schemas.
+
+## Documentation
+
+- [docs/API.md](docs/API.md) — endpoint and response reference
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how sources combine and how
+  sailing conditions are assessed
+- [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) — upstream source contracts and
+  quality-control rules
+
 ## AWS Deployment
 
 The service is deployed from this repo with Terraform in `terraform/prod`.
