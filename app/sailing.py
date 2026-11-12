@@ -6,6 +6,15 @@ from app.models import Observation
 
 MPS_TO_KT = 1.94384449
 M_TO_FT = 3.280839895
+ALERTS_UNKNOWN_CAUTION = (
+    "NOAA marine forecast and alerts could not be retrieved, so active Small Craft Advisories "
+    "or Gale Warnings are UNKNOWN; check NWS marine alerts before sailing."
+)
+
+
+def alerts_known(alerts: dict[str, Any]) -> bool:
+    """True only when the alerts source actually answered (with or without alerts)."""
+    return isinstance(alerts, dict) and isinstance(alerts.get("alerts"), list)
 
 
 def build_sailing_conditions(
@@ -31,6 +40,13 @@ def build_sailing_conditions(
     cautions = build_cautions(alerts, city_water, wind_assessment, wave_assessment)
     risk_level = risk_from(alerts, wind_assessment, wave_assessment)
     headline = headline_from(risk_level, wind_assessment, wave_assessment, alerts)
+    if not alerts_known(alerts):
+        # The NOAA forecast/alerts source failed. Never present that as "no alerts".
+        cautions.insert(0, ALERTS_UNKNOWN_CAUTION)
+        if risk_level == "low":
+            risk_level = "moderate"
+            headline = headline_from(risk_level, wind_assessment, wave_assessment, alerts)
+        headline = f"Marine alert status unknown. {headline}"
     location_context = build_location_context(area_id, buoys)
 
     return {
@@ -248,7 +264,9 @@ def build_llm_context(
     location_context: dict[str, Any] | None = None,
 ) -> str:
     parts = [headline]
-    if not alerts.get("alerts"):
+    if not alerts_known(alerts):
+        parts.append("Marine alert status is unknown because the NOAA forecast/alerts source was unavailable.")
+    elif not alerts.get("alerts"):
         parts.append(alerts.get("message", "No active marine alerts reported."))
     if location_context:
         parts.append("Observation geography: " + location_context.get("summary", "Chicago lakefront observations."))
