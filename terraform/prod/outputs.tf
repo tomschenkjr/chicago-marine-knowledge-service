@@ -1,6 +1,6 @@
 output "service_internal_url" {
-  description = "Private URL for MCP tasks to call the knowledge service"
-  value       = "${local.service_url_scheme}://${aws_lb.service.dns_name}"
+  description = "Service Connect URL for MCP tasks in the mcp namespace to call the knowledge service"
+  value       = "http://${local.discovery_name}:${local.container_port}"
 }
 
 output "ecr_repository_url" {

@@ -51,7 +51,9 @@ See [docs/API.md](docs/API.md) for full request/response schemas.
 
 The service is deployed from this repo with Terraform in `terraform/prod`.
 It runs as a private ECS/Fargate service in the existing `mcp-cluster` VPC and
-is reached by the MCP wrapper through an internal ALB URL.
+is reached by the MCP wrapper through ECS Service Connect at
+`http://cmk-service:8000` (in the `mcp` namespace created by `mcp-aws-infra`).
+There is no load balancer in front of it; it runs on Fargate Spot.
 
 ```bash
 cd terraform/prod
@@ -62,6 +64,7 @@ AWS_PROFILE=mcp-prod-admin terraform output service_internal_url
 
 Use the `service_internal_url` output as the
 `chicago_marine_knowledge_service_url` value in `~/git/mcp-aws-infra`.
+Apply `mcp-aws-infra` first so the `mcp` Service Connect namespace exists.
 
 The public MCP URL is handled separately by `mcp-aws-infra`; this REST service
 does not need a public `tomschenkjr.net` hostname.
