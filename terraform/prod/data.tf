@@ -37,3 +37,7 @@ data "aws_security_group" "mcp_ecs_tasks" {
 data "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 }
+
+data "aws_service_discovery_http_namespace" "mcp" {
+  name = "mcp"
+}

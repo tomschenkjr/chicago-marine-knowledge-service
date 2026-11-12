@@ -146,13 +146,16 @@ others are excluded.
 ## Deployment topology
 
 The service runs as a **private** ECS/Fargate service inside the shared
-`mcp-cluster` VPC and is reached only over an internal ALB URL — it has no
-public `tomschenkjr.net` hostname. Its own Terraform lives in `terraform/prod`
+`mcp-cluster` VPC and is reached only through ECS Service Connect at
+`http://cmk-service:8000` (namespace `mcp`) — it has no load balancer and no
+public `tomschenkjr.net` hostname. Its security group only admits traffic on
+port 8000 from the MCP tasks' security group (`mcp-ecs-tasks-sg`), and it runs
+on Fargate Spot. Its own Terraform lives in `terraform/prod`
 and is applied independently of `mcp-aws-infra`:
 
 ```
 chicago-marine-knowledge-service/terraform/prod  ──▶ private REST service (this repo)
-mcp-aws-infra/terraform/prod                     ──▶ public MCP wrapper + shared VPC/ALB/ECR
+mcp-aws-infra/terraform/prod                     ──▶ public MCP wrapper + shared VPC/ALB/ECR + `mcp` namespace
 ```
 
 The `service_internal_url` output of this repo's Terraform is wired into

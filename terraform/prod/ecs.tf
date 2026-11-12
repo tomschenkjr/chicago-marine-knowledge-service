@@ -22,6 +22,8 @@ resource "aws_ecs_task_definition" "service" {
       essential = true
       portMappings = [
         {
+          name          = local.port_name
+          appProtocol   = "http"
           containerPort = local.container_port
           hostPort      = local.container_port
           protocol      = "tcp"
@@ -54,7 +56,11 @@ resource "aws_ecs_service" "service" {
   cluster         = data.aws_ecs_cluster.mcp.arn
   task_definition = aws_ecs_task_definition.service.arn
   desired_count   = 1
-  launch_type     = "FARGATE"
+
+  capacity_provider_strategy {
+    capacity_provider = "FARGATE_SPOT"
+    weight            = 1
+  }
 
   network_configuration {
     subnets          = [data.aws_subnet.private_1.id, data.aws_subnet.private_2.id]
@@ -62,13 +68,22 @@ resource "aws_ecs_service" "service" {
     assign_public_ip = false
   }
 
-  load_balancer {
-    target_group_arn = aws_lb_target_group.service.arn
-    container_name   = local.service_name
-    container_port   = local.container_port
-  }
+  # Exposes this service inside the "mcp" Service Connect namespace as
+  # http://cmk-service:8000 (replaces the former internal ALB).
+  service_connect_configuration {
+    enabled   = true
+    namespace = data.aws_service_discovery_http_namespace.mcp.arn
 
-  depends_on = [aws_lb_listener.service]
+    service {
+      port_name      = local.port_name
+      discovery_name = local.discovery_name
+
+      client_alias {
+        port     = local.container_port
+        dns_name = local.discovery_name
+      }
+    }
+  }
 
   lifecycle {
     ignore_changes = [task_definition]

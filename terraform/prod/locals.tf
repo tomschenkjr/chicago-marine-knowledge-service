@@ -8,7 +8,6 @@ locals {
   log_retention_days = 7
   cpu                = 512
   memory             = 1024
-  internal_alb_name  = "cmk-service-internal"
-  target_group_name  = "cmk-service"
-  service_url_scheme = "http"
+  port_name          = "http"
+  discovery_name     = "cmk-service"
 }
