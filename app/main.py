@@ -75,7 +75,7 @@ async def marine_context(request: MarineContextRequest) -> MarineContextResponse
     try:
         place = get_place(request.place_id)
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=_error_detail(exc)) from exc
 
     city = CitySocrataClient()
     dever = DeverCribClient()
@@ -209,12 +209,19 @@ async def _safe_marine_sailing_inputs(
     marine: MarineMcpClient,
     source_statuses: list[SourceStatus],
 ) -> tuple[dict, list]:
-    marine_briefing, buoys = await asyncio.gather(
+    forecast, alerts, buoys = await asyncio.gather(
         _safe_dict(
             source=SourceKind.MARINE_MCP,
-            name="NOAA Marine MCP forecast and alerts",
+            name="NOAA Marine MCP nearshore forecast",
             endpoint="https://marine-mcp.tomschenkjr.net/sse",
-            fetch=marine.sailing_briefing,
+            fetch=marine.nearshore_forecast,
+            source_statuses=source_statuses,
+        ),
+        _safe_dict(
+            source=SourceKind.MARINE_MCP,
+            name="NOAA Marine MCP alerts",
+            endpoint="https://marine-mcp.tomschenkjr.net/sse",
+            fetch=marine.marine_alerts,
             source_statuses=source_statuses,
         ),
         _safe_list(
@@ -225,6 +232,11 @@ async def _safe_marine_sailing_inputs(
             source_statuses=source_statuses,
         ),
     )
+    marine_briefing = {
+        "location": "Chicago / Lake Michigan",
+        "nearshore_forecast": forecast,
+        "active_alerts": alerts,
+    }
     return marine_briefing, buoys
 
 
@@ -258,7 +270,7 @@ async def _safe_observation(
                 name=name,
                 endpoint=endpoint,
                 status="unavailable",
-                detail=str(exc),
+                detail=_error_detail(exc),
             )
         )
         return None
@@ -285,7 +297,7 @@ async def _safe_list(
         items = await asyncio.wait_for(fetch(), timeout=settings.request_timeout_seconds)
     except Exception as exc:  # pragma: no cover - exercised by integration checks
         source_statuses.append(
-            SourceStatus(source=source, name=name, endpoint=endpoint, status="unavailable", detail=str(exc))
+            SourceStatus(source=source, name=name, endpoint=endpoint, status="unavailable", detail=_error_detail(exc))
         )
         return []
     source_statuses.append(
@@ -305,7 +317,7 @@ async def _safe_dict(
         item = await asyncio.wait_for(fetch(), timeout=settings.request_timeout_seconds)
     except Exception as exc:  # pragma: no cover - exercised by integration checks
         source_statuses.append(
-            SourceStatus(source=source, name=name, endpoint=endpoint, status="unavailable", detail=str(exc))
+            SourceStatus(source=source, name=name, endpoint=endpoint, status="unavailable", detail=_error_detail(exc))
         )
         return {}
     source_statuses.append(
@@ -318,4 +330,10 @@ async def _safe_status(source: SourceKind, name: str, endpoint: str, fetch) -> S
     try:
         return await asyncio.wait_for(fetch(), timeout=settings.request_timeout_seconds)
     except Exception as exc:  # pragma: no cover - exercised by integration checks
-        return SourceStatus(source=source, name=name, endpoint=endpoint, status="unavailable", detail=str(exc))
+        return SourceStatus(source=source, name=name, endpoint=endpoint, status="unavailable", detail=_error_detail(exc))
+
+
+def _error_detail(exc: Exception) -> str:
+    """Readable error text; some exceptions (e.g. TimeoutError) have an empty str()."""
+    message = str(exc)
+    return f"{type(exc).__name__}: {message}" if message else type(exc).__name__

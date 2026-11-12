@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 from mcp import ClientSession
@@ -34,17 +35,28 @@ class MarineMcpClient:
                 detail=str(exc),
             )
 
-    async def sailing_briefing(self) -> dict[str, Any]:
+    async def _call_tool(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         async with sse_client(str(settings.marine_mcp_sse_url)) as streams:
             async with ClientSession(*streams) as session:
                 await session.initialize()
-                forecast_result = await session.call_tool("get_nearshore_forecast", {"zone_id": "LMZ741"})
-                alerts_result = await session.call_tool("get_marine_alerts", {"zone_id": "LMZ741"})
-                return {
-                    "location": "Chicago / Lake Michigan",
-                    "nearshore_forecast": _tool_result_to_dict(forecast_result) or {},
-                    "active_alerts": _tool_result_to_dict(alerts_result) or {},
-                }
+                result = await session.call_tool(name, arguments)
+                return _tool_result_to_dict(result) or {}
+
+    async def nearshore_forecast(self, zone_id: str = "LMZ741") -> dict[str, Any]:
+        return await self._call_tool("get_nearshore_forecast", {"zone_id": zone_id})
+
+    async def marine_alerts(self, zone_id: str = "LMZ741") -> dict[str, Any]:
+        # Separate MCP session from the forecast so a dropped forecast message
+        # cannot also take out the alerts.
+        return await self._call_tool("get_marine_alerts", {"zone_id": zone_id})
+
+    async def sailing_briefing(self) -> dict[str, Any]:
+        forecast, alerts = await asyncio.gather(self.nearshore_forecast(), self.marine_alerts())
+        return {
+            "location": "Chicago / Lake Michigan",
+            "nearshore_forecast": forecast,
+            "active_alerts": alerts,
+        }
 
     async def buoy_observations(self, station_ids: list[str] | None = None) -> list[dict[str, Any]]:
         station_ids = station_ids or BUOY_STATIONS
